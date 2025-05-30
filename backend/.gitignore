@@ -1,0 +1,8 @@
+node_modules
+.env
+Notes.md
+Readme.md
+psuedo.md
+Assignment1.pdf
+task-manager-auth.postman_collection.json
+task-manager-project.postman_collection.json
