@@ -4,6 +4,7 @@ import { ApiResponse } from "../utils/api-response.js";
 import { Task } from "../models/task.models.js";
 import { ProjectNote } from "../models/note.models.js";
 import { ProjectMember } from "../models/projectMember.models.js";
+import { isProjectAdminOrAssignee } from "../utils/projectRoles.js";
 
 // Utility to check if the user is a member of the project
 const isProjectMember = async (userId, projectId) => {
@@ -57,16 +58,26 @@ const getNotesByTask = asyncHandler(async (req, res) => {
 
 const updateNote = asyncHandler(async (req, res) => {
   const { noteId } = req.params;
-  const { content } = req.body;
+  const { updates } = req.body;
 
   const note = await ProjectNote.findById(noteId);
   if (!note) throw new ApiError(404, "Note not found");
 
-  if (!note.createdBy.equals(req.user._id)) {
-    throw new ApiError(403, "You can only update your own note");
-  }
+  const task = await Task.findById(note.task);
+  if (!task) throw new ApiError(404, "Task not found");
 
-  note.content = content || note.content;
+  const canEdit = await isProjectAdminOrAssignee(
+    req.user._id,
+    note.project,
+    task.assignedTo,
+  );
+  if (!canEdit)
+    throw new ApiError(
+      403,
+      "Only assignee or project admin can update this note",
+    );
+
+  Object.assign(note, updates);
   await note.save();
 
   return res.status(200).json(new ApiResponse(200, { note }, "Note updated"));
@@ -78,9 +89,19 @@ const deleteNote = asyncHandler(async (req, res) => {
   const note = await ProjectNote.findById(noteId);
   if (!note) throw new ApiError(404, "Note not found");
 
-  if (!note.createdBy.equals(req.user._id)) {
-    throw new ApiError(403, "You can only update your own note");
-  }
+  const task = await Task.findById(note.task);
+  if (!task) throw new ApiError(404, "Task not found");
+
+  const canDelete = await isProjectAdminOrAssignee(
+    req.user._id,
+    note.project,
+    task.assignedTo,
+  );
+  if (!canDelete)
+    throw new ApiError(
+      403,
+      "Only assignee or project admin can delete this note",
+    );
 
   await note.deleteOne();
 

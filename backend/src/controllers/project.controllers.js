@@ -5,6 +5,7 @@ import { Project } from "../models/project.models.js";
 import { ProjectMember } from "../models/projectMember.models.js";
 import { User } from "../models/user.models.js";
 import { UserRoleEnum } from "../utils/constants.js";
+import { getUserProjectRole } from "../utils/projectRoles.js";
 
 const createProject = asyncHandler(async (req, res) => {
   console.log("Body", req.body);
@@ -52,12 +53,11 @@ const getProjectsById = asyncHandler(async (req, res) => {
   const project = await Project.findById(projectId);
   if (!project) throw new ApiError(404, "Project not found");
 
-  const memberships = await ProjectMember.findOne({
-    user: req.user._id,
-    project: projectId,
-  });
+  const role = await getUserProjectRole(req.user._id, projectId); // 👈 get user role
 
-  return res.status(200).json(new ApiResponse(200, { project }));
+  return res
+    .status(200)
+    .json(new ApiResponse(200, { project, role }, "Project fetched"));
 });
 
 const updateProject = asyncHandler(async (req, res) => {
