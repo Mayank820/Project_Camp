@@ -10,6 +10,7 @@ import {
 } from "../controllers/task.controllers.js";
 import { upload } from "../middlewares/multer.middlewares.js";
 import { verifyAccessToken } from "../middlewares/auth.middlewares.js";
+import { isProjectAdminOrAssignee } from "../middlewares/role.middlwares.js";
 
 const router = Router();
 
@@ -26,10 +27,20 @@ router.get("/", getUserTasks); // GET /api/v1/task
 router.get("/project/:projectId", getTasksByProject); // GET /api/v1/task/project/:projectId
 
 // Update task
-router.put("/:taskId", updateTask); // PUT /api/v1/task/:taskId
+router.patch(
+  "/:taskId",
+  verifyAccessToken,
+  isProjectAdminOrAssignee,
+  updateTask,
+); // PUT /api/v1/task/:taskId
 
 // Delete a task
-router.delete("/:taskId", deleteTask); // DELETE /api/v1/task/:taskId
+router.delete(
+  "/:taskId",
+  verifyAccessToken,
+  isProjectAdminOrAssignee,
+  deleteTask,
+); // DELETE /api/v1/task/:taskId
 
 // upload a file
 router.post(
